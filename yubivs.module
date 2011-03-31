@@ -1,0 +1,92 @@
+<?php
+// vim: set foldmethod=marker sw=2 ts=2 et:
+/**
+ * @file
+ * This file provides a yubikey validation server backed on drupal
+ */
+
+
+// {{{ Yubikey api constants
+define('YUBIVS_API_VER_20', '2.0');
+define('YUBIVS_API_VER_1x', '1.1');
+define('YUBIVS_API_VER_11', '1.1');
+define('YUBIVS_API_VER_10', '1.0');
+// }}}
+
+
+// {{{ Menu stuff
+/**
+ * Implements hook_menu().
+ **/
+function yubivs_menu() {
+  $items = array();
+
+  // TODO: Implement access callback to handle enable 
+  //       access to whether V1 or V2 protocol
+
+  // TODO: Implement deliver callback to format response 
+  //       with private sign
+
+  // ValidationProtocolV20
+  $items['wsapi/2.0/verify'] = array(
+    'page callback' => 'yubivs_verify',
+    'page arguments' => array(YUBIVS_API_VER_20),
+    'access callback' => TRUE,
+    'file' => 'yubivs.verify.inc',
+  );
+
+  // ValidationProtocolV10
+  // ValidationProtocolV11
+  $items['wsapi/verify'] = array(
+    'page callback' => 'yubivs_verify',
+    'page arguments' => array(YUBIVS_API_VER_1x),
+    'access callback' => TRUE,
+    'file' => 'yubivs.verify.inc',
+  );
+
+  $items['admin/config/yubivs'] = array(
+    'page callback' => 'yubivs_admin_settings',
+    'file' => 'yubivs.admin.inc',
+  );
+
+  return $items;
+}
+// }}}
+
+
+// {{{ Node definition stuff
+/**
+ * Implements hook_node_info().
+ */
+function yubivs_node_info() {
+  $t = get_t();
+  return array(
+    'yubivs_ksm' => array(
+      'name' => $t('Yubikey key storage server'),
+      'base' => 'yubivs_ksm',
+      'description' => $t('A yubikey key storage server is a networked key storage server deciphering otp for validation server'),
+      'title_label' => $t('Yubikey KSM server url'),
+      ),
+    );
+}
+// }}}
+
+
+// {{{ Form stuff
+/**
+ * Implements hook_form().
+ */
+function yubivs_ksm_form($node, $form_state) {
+  $type = node_type_get_type($node);
+  $form['title'] = array(
+    '#type' => 'textfield', 
+    '#title' => check_plain($type->title_label), 
+    '#default_value' => !empty($node->title) ? $node->title : '', 
+    '#required' => TRUE, 
+    '#weight' => -5,
+  );
+  return $form;
+}
+// }}}
+
+

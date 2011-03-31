@@ -1,0 +1,208 @@
+<?php
+// vim: set foldmethod=marker sw=2 ts=2 et:
+/**
+ * @file
+ * Module implementing every fields for yubikey validation server module
+ */
+
+
+// {{{ Field definition
+/**
+ * Implements hook_field_info().
+ *
+ * Provides the description of the field.
+ */
+function yubivs_fields_field_info() {
+  return array(
+    'field_yubivs_hexadecimal' => array(
+      'label' => t('Hexadecimal storage field'),
+      'description' => t('This fields store only hexadecimal values.'),
+      'default_widget' => 'yubivs_fields_hexadecimal_widget',
+      'default_formatter' => 'yubivs_fields_hexadecimal_formatter',
+      'settings' => array(
+        'min_length',
+        'max_length',
+        ),
+    ),
+  );
+}
+
+
+/**
+ * Implements hook_field_validate().
+ *
+ * Verifies that the field is valid (hexadecimal digits)
+ */
+function yubivs_fields_field_validate($entity_type, $entity, $field, $instance, $langcode, $items, &$errors) {
+  foreach ($items as $delta => $item) {
+    if (!empty($item['value'])) {
+      if (! preg_match('@^[0-9a-f]+$@', $item['value'])) {
+        $errors[$field['field_name']][$langcode][$delta][] = array(
+          'error' => 'yubivs_fields_hexadecimal_invalid',
+          'message' => t('Field must be hexadecimal.'),
+        );
+      }
+      $len = drupal_strlen($item['value']);
+      if ($len > $field['settings']['max_length']) {
+        $errors[$field['field_name']][$langcode][$delta][] = array(
+          'error' => 'yubivs_fields_hexadecimal_too_wide',
+          'message' => t('Field must be @length long at most.', array('@length'=>$field['settings']['max_length'])),
+        );
+      }
+      if ($len < $field['settings']['min_length']) {
+        $errors[$field['field_name']][$langcode][$delta][] = array(
+          'error' => 'yubivs_fields_hexadecimal_too_narrow',
+          'message' => t('Field must be @length long at least.', array('@length'=>$field['settings']['min_length'])),
+        );
+      }
+    }
+  }
+}
+
+
+/**
+ * Implements hook_field_is_empty().
+ */
+function yubivs_fields_field_is_empty($item, $field) {
+  return empty($item['value']);
+}
+// }}}
+
+
+// {{{ Field settings
+/**
+ * Implements hook_field_settings_form().
+ */
+function yubivs_fields_field_settings_form($field, $instance, $has_data) {
+  $settings = $field['settings'];
+  $form = array();
+
+  switch ($field['type']) {
+  case 'field_yubivs_hexadecimal':
+    $form['max_length'] = array(
+      '#type' => 'textfield', 
+      '#title' => t('Maximum length'), 
+      '#default_value' => @$settings['max_length'], 
+      '#required' => TRUE, 
+      '#description' => t('The maximum length of the field in characters.'), 
+      '#element_validate' => array('_element_validate_integer_positive'),
+      // @todo: If $has_data, add a validate handler that only allows
+      // max_length to increase. 
+      '#disabled' => $has_data,
+    );
+    $form['min_length'] = array(
+      '#type' => 'textfield', 
+      '#title' => t('Minimum length'), 
+      '#default_value' => @$settings['min_length'], 
+      '#required' => TRUE, 
+      '#description' => t('The minimum length of the field in characters.'), 
+      '#element_validate' => array('_element_validate_integer_positive'),
+      // @todo: If $has_data, add a validate handler that only allows
+      // max_length to increase. 
+      '#disabled' => $has_data,
+    );
+    break;
+  }
+
+  return $form;
+}
+// }}}
+
+
+// {{{ Formatter stuff
+/**
+ * Implements hook_field_formatter_info().
+ */
+function yubivs_fields_field_formatter_info() {
+  return array(
+    // This formatter just displays the hex value in the color indicated.
+    'yubivs_fields_hexadecimal_formatter' => array(
+      'label' => t('Simple text-base formatter'),
+      'field types' => array('field_yubivs_hexadecimal'),
+    ),
+  );
+}
+
+
+/**
+ * Implements hook_field_formatter_view().
+ *
+ * One formatter is implemented.
+ * - yubivs_fields_hexadeximal_formatter just outputs markup indicating the value that
+ *   was entered.
+ */
+function yubivs_fields_field_formatter_view($entity_type, $entity, $field, $instance, $langcode, $items, $display) {
+  $element = array();
+
+  switch ($display['type']) {
+    // This formatter simply outputs the field as text and with a color.
+    case 'yubivs_fields_hexadecimal_formatter':
+      foreach ($items as $delta => $item) {
+        $element[$delta]['#markup'] = '<p>' . t('@value', array('@value' => $item['value'])) . '</p>';
+      }
+      break;
+  }
+
+  return $element;
+}
+// }}}
+
+
+// {{{ Widget stuff
+/**
+ * Implements hook_field_widget_info().
+ *
+ * Only one widget is provided.
+ * - A simple text-only widget where the user enters the hexa values.
+ */
+function yubivs_fields_field_widget_info() {
+  return array(
+    'yubivs_fields_hexadecimal_widget' => array(
+      'label' => t('Hexadecimal value'),
+      'field types' => array('field_yubivs_hexadecimal'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_field_widget_form().
+ */
+function yubivs_fields_field_widget_form(&$form, &$form_state, $field, $instance, $langcode, $items, $delta, $element) {
+  $value = isset($items[$delta]['value']) ? $items[$delta]['value'] : '';
+  $element += array(
+    '#delta' => $delta,
+  );
+  $main_element = array();
+
+  switch ($instance['widget']['type']) {
+    case 'yubivs_fields_hexadecimal_widget':
+      $main_element += $element + array(
+        '#type' => 'textfield',
+        '#default_value' => $value,
+        '#title' => $instance['label'],
+        '#description' => $instance['description'],
+      );
+      break;
+  }
+
+  $element['value'] = $main_element;
+  return $element;
+}
+
+
+/**
+ * Implements hook_field_widget_error().
+ */
+function yubivs_fields_field_widget_error($element, $error, $form, &$form_state) {
+  switch ($error['error']) {
+    case 'yubivs_fields_hexadecimal_too_wide':
+    case 'yubivs_fields_hexadecimal_too_narrow':
+    case 'yubivs_fields_hexadecimal_invalid':
+      form_error($element, $error['message']);
+      break;
+  }
+}
+// }}}
+
+
+

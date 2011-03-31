@@ -1,0 +1,9 @@
+name = Yubikey validation server
+description = "This module provides a yubikey validation server"
+core = 7.x
+package = Yubivs
+dependencies[] = yubivs_fields
+files[] = yubivs.verify.inc
+files[] = yubivs.admin.inc
+files[] = yubivs.request.processor.inc
+configure = admin/config/yubivs
