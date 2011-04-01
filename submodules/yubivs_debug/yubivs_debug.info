@@ -1,0 +1,5 @@
+name = Yubikey validation server debug module
+description = "This module provides debug helpers for validation server"
+core = 7.x
+package = Yubivs
+dependencies[]=yubivs

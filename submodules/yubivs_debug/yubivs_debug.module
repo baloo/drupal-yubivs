@@ -1,0 +1,36 @@
+<?php
+// vim: set foldmethod=marker sw=2 ts=2 et:
+/**
+ * @file
+ * Module implementing debug stuff for yubikey validation server module
+ */
+
+
+
+// {{{ Menu stuff
+/**
+ * Implements hook_menu().
+ */
+function yubivs_debug_menu() {
+  $items = array();
+  // ValidationProtocolV20
+  $items['wsapi/2.0/verify/debug'] = array(
+    'delivery callback' => 'drupal_deliver_html_page',
+    'access callback' => TRUE,
+    'file path' => drupal_get_path('module', 'yubivs'),
+  );
+
+  // ValidationProtocolV10
+  // ValidationProtocolV11
+  $items['wsapi/verify/debug'] = array(
+    'delivery callback' => 'drupal_deliver_html_page',
+    'access callback' => TRUE,
+    'file path' => drupal_get_path('module', 'yubivs'),
+  );
+
+  return $items;
+}
+// }}}
+
+
+
