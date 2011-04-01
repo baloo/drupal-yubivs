@@ -12,17 +12,17 @@
  * Returns fields installed by this module
  */
 function _yubivs_installed_fields() {
-  $fields = array(
-    'yubivs_ksm_shared_key' => array(
-      'field_name' => 'yubivs_ksm_shared_key',
+  $fields = array();
+
+  $fields['yubivs_client_shared_key'] = array(
+      'field_name' => 'yubivs_client_shared_key',
       'cardinality' => 1,
       'type'        => 'field_yubivs_hexadecimal',
       'settings'    => array(
-        'min_length' => 32,
-        'max_length' => 32,
+        'min_length' => 8,
+        'max_length' => 128,
         ),
-      ),
-    );
+      );
   return $fields;
 }
 
@@ -33,20 +33,19 @@ function _yubivs_installed_fields() {
 function _yubivs_installed_instances() {
   $t = get_t();
 
-  $instances = array(
-    'yubivs_ksm_shared_key' => array(
-      'field_name' => 'yubivs_ksm_shared_key',
-      'bundle' => 'yubivs_ksm',
+  $instances = array();
+  $instances['yubivs_client_shared_key'] = array(
+      'field_name' => 'yubivs_client_shared_key',
+      'bundle' => 'yubivs_client',
       'entity_type' => 'node',
-      'label'       => $t('The shared key with yubikey ksm.'),
+      'label'       => $t('The shared key with client.'),
       'widget'      => array(
         'type'    => 'yubivs_fields_hexadecimal_widget',
         ),
       'display' => array(
         'yubivs_fields_hexadecimal_formatter' => array(),
         ),
-      ),
-    );
+      );
   return $instances;
 }
 // }}}

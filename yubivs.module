@@ -32,7 +32,9 @@ function yubivs_menu() {
     'page callback' => 'yubivs_verify',
     'page arguments' => array(YUBIVS_API_VER_20),
     'access callback' => TRUE,
+    'delivery callback' => 'yubivs_deliver_callback',
     'file' => 'yubivs.verify.inc',
+    'type' => MENU_CALLBACK,
   );
 
   // ValidationProtocolV10
@@ -40,16 +42,29 @@ function yubivs_menu() {
   $items['wsapi/verify'] = array(
     'page callback' => 'yubivs_verify',
     'page arguments' => array(YUBIVS_API_VER_1x),
+    'delivery callback' => 'yubivs_deliver_callback',
     'access callback' => TRUE,
+    'type' => MENU_CALLBACK,
     'file' => 'yubivs.verify.inc',
   );
 
   $items['admin/config/yubivs'] = array(
     'page callback' => 'yubivs_admin_settings',
     'file' => 'yubivs.admin.inc',
+    'type' => MENU_NORMAL_ITEM,
   );
 
   return $items;
+}
+
+
+/**
+ * Deliver callback
+ */
+function yubivs_deliver_callback($content) {
+  foreach ($content['#request']->response as $name => $response) {
+    echo $name .'='. $response.chr(10);
+  }
 }
 // }}}
 
@@ -67,6 +82,12 @@ function yubivs_node_info() {
       'description' => $t('A yubikey key storage server is a networked key storage server deciphering otp for validation server'),
       'title_label' => $t('Yubikey KSM server url'),
       ),
+    'yubivs_client' => array(
+      'name' => $t('Yubikey validation server client'),
+      'base' => 'yubivs_client',
+      'description' => $t('A yubikey key validation server client is a client allowed to verify otp  against this service'),
+      'title_label' => $t('Client id'),
+      ),
     );
 }
 // }}}
@@ -77,6 +98,22 @@ function yubivs_node_info() {
  * Implements hook_form().
  */
 function yubivs_ksm_form($node, $form_state) {
+  $type = node_type_get_type($node);
+  $form['title'] = array(
+    '#type' => 'textfield', 
+    '#title' => check_plain($type->title_label), 
+    '#default_value' => !empty($node->title) ? $node->title : '', 
+    '#required' => TRUE, 
+    '#weight' => -5,
+  );
+  return $form;
+}
+
+
+/**
+ * Implements hook_form().
+ */
+function yubivs_client_form($node, $form_state) {
   $type = node_type_get_type($node);
   $form['title'] = array(
     '#type' => 'textfield', 
