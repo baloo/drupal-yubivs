@@ -39,6 +39,11 @@ class Yubivs_Request {
 
   // Populated by request processors 
   public $decrypted_data;
+  // This request signature
+  public $signature;
+  // This response
+  public $response;
+  public $status;
 
 
   // Not yet implemented
@@ -47,7 +52,10 @@ class Yubivs_Request {
 
 
   // Array of Yubivs_Request_Processor objects;
-  protected $backends;
+  protected $request_backends;
+
+  // Array of Yubivs_Request_Processor objects;
+  protected $response_backends;
 
 
   /**
@@ -56,6 +64,7 @@ class Yubivs_Request {
   public function __construct() {
     // Init the backends list
     $this->backends = array();
+
   }
 
 
@@ -64,8 +73,8 @@ class Yubivs_Request {
    */
   public function verify() {
     $result = self::STATUS_OK;
-    foreach($this->backends as $backend) {
-      $result |= $backend->verify($this);
+    foreach($this->request_backends as $backend) {
+      $result |= $backend->process($this);
 
       if($result !== self::STATUS_OK) {
         break;
@@ -74,18 +83,42 @@ class Yubivs_Request {
     return $result;
   }
 
+
+  /**
+   * Respond to the client
+   */
+  public function respond() {
+    $result = self::STATUS_OK;
+    foreach($this->response_backends as $backend) {
+      $result |= $backend->process($this);
+    }
+    return $result;
+  }
+
+
   /**
    * Setter for backends list
    */
-  public function addBackend(Yubivs_Request_Processor $backend) {
-    $this->backends[] = $backend;
+  public function addRequestBackend(Yubivs_Request_Processor $backend) {
+    $this->request_backends[] = $backend;
   }
+
+
+  /**
+   * Setter for backends list
+   */
+  public function addResponseBackend(Yubivs_Request_Processor $backend) {
+    $this->response_backends[] = $backend;
+  }
+
 
   /**
    * Logger function
    */
   public function log($message, $return = self::STATUS_NAN) {
     // TODO implement this function with watchdog stuff and backtrace 
+   var_dump($message);
+    dsm($message);
   }
 }
 // }}}
@@ -97,13 +130,13 @@ class Yubivs_Request {
  */
 function yubivs_verify($api_version) {
   $defaults = array(
-    'id'        => '',
-    'otp'       => '',
-    'h'         => '',
-    'timestamp' => '',
-    'nonce'     => '',
-    'sl'        => '',
-    'timeout'   => '',
+    'id'        => NULL,
+    'otp'       => NULL,
+    'h'         => NULL,
+    'timestamp' => NULL,
+    'nonce'     => NULL,
+    'sl'        => NULL,
+    'timeout'   => NULL,
     );
   $arguments = $_GET+$defaults;
   // Construct request object
@@ -118,11 +151,15 @@ function yubivs_verify($api_version) {
   $request->sl          = $arguments['sl'       ];
   $request->timeout     = $arguments['timeout'  ];
 
-  _yubivs_populate_processors($request);
+  _yubivs_populate_request_processors($request);
+  _yubivs_populate_response_processors($request);
 
 
   // If request looks valid, then we can check otp further
   $status = $request->verify();
+
+  // Populate response
+  $status = $request->respond();
 
   
 
@@ -148,28 +185,105 @@ function yubivs_verify($api_version) {
   dsm(arg());
   dsm($_GET);
 
-  return '';
+  return _yubivs_format_output($status, $request);
 }
 // }}}
 
 
 // {{{ Helpers functions
-function _yubivs_populate_processors($request) {
+/**
+ * This function adds response processors to a simple request
+ */
+function _yubivs_populate_response_processors($request) {
   $processors = array(
+    'Yubivs_Request_Processor_AddStatus',
+    'Yubivs_Request_Processor_AddT',
+    'Yubivs_Request_Processor_AddTimestamp',
+    'Yubivs_Request_Processor_AddSessionCounter',
+    'Yubivs_Request_Processor_AddSessionUse',
+    'Yubivs_Request_Processor_AddSl',
+    'Yubivs_Request_Processor_ResponseSignatureStringBuild',
+    'Yubivs_Request_Processor_ResponseSignatureGenerate',
+    );
+  foreach($processors as $processor) {
+    $request->addResponseBackend(new $processor());
+  }
+}
+
+
+/**
+ * This function adds request processors to a simple request
+ */
+function _yubivs_populate_request_processors($request) {
+  $processors = array(
+    'Yubivs_Request_Processor_ClientIdMandatory',
     'Yubivs_Request_Processor_SignatureMandatory',
     'Yubivs_Request_Processor_TimestampMandatory',
     'Yubivs_Request_Processor_NonceMandatory',
     'Yubivs_Request_Processor_OtpMandatory',
     'Yubivs_Request_Processor_OtpRegexp',
+    'Yubivs_Request_Processor_ClientIdLookup',
+    'Yubivs_Request_Processor_RequestSignatureStringBuild',
+    'Yubivs_Request_Processor_RequestSignatureGenerate',
+    'Yubivs_Request_Processor_RequestSignatureValidate',
     'Yubivs_Request_Processor_DecryptOtp',
-//    '',
-//    '',
-//    '',
-//    '',
     );
   foreach($processors as $processor) {
-    $request->addBackend(new $processor());
+    $request->addRequestBackend(new $processor());
   }
+}
+
+
+/**
+ * This function formats api output
+ */
+function _yubivs_format_output($status, $request) {
+  $return = array();
+
+  // This part is enougth for api
+  $return['#result'] = $status;
+  $return['#request'] = $request;
+
+  // This part formats optionnal debug
+  $return['result'] = array(
+    '#type' => 'fieldset', 
+    '#title' => t('Result'),
+    '#collapsible' => FALSE,
+    'content' => array(
+      'result' => array(
+        '#markup' => '<p>'. t('Result is : @result (%hexval)', array(
+          '@result' => $status,
+          '%hexval' => sprintf('%04x', $status),
+          )) .'</p',
+        ),
+      ),
+    );
+  $return['process'] = array(
+    '#type' => 'fieldset',
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
+    '#title' => t('Process information'),
+    'content' => array(
+      ),
+    );
+
+  $reflector = new ReflectionClass('Yubivs_Request');
+  foreach ($reflector->getConstants() as $constname => $value) {
+    if (preg_match('#^STATUS_[A-Z_]+$#', $constname)) {
+      $return['process']['content'][] = array(
+        '#prefix' => '<p>',
+        '#suffix' => '</p>',
+        '#markup' => t('%constname (%value) is %status', array(
+          '%constname' => drupal_substr($constname, 7),
+          '%value' => sprintf('%04x', $value),
+          '%status' => (($status & $value) || ($status == $value))? t('enabled'): t('disabled'),
+          )),
+        );
+    }
+  }
+
+
+  return $return;
 }
 // }}}
 
