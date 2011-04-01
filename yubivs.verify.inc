@@ -179,12 +179,6 @@ function yubivs_verify($api_version) {
 //  }
 
 
-  dsm($status);
-  dsm($request);
-  dsm($api_version);
-  dsm(arg());
-  dsm($_GET);
-
   return _yubivs_format_output($status, $request);
 }
 // }}}
