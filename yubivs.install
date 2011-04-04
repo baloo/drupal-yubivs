@@ -23,6 +23,39 @@ function _yubivs_installed_fields() {
         'max_length' => 128,
         ),
       );
+
+  // 3 Bytes field
+  $fields['yubivs_yubikey_timestamp'] = array(
+      'field_name' => 'yubivs_yubikey_timestamp',
+      'cardinality' => 1,
+      'type'        => 'field_yubivs_hexadecimal',
+      'settings'    => array(
+        'min_length' => 6,
+        'max_length' => 6,
+        ),
+      );
+
+  // 2 Bytes field
+  $fields['yubivs_yubikey_counter'] = array(
+      'field_name' => 'yubivs_yubikey_counter',
+      'cardinality' => 1,
+      'type'        => 'field_yubivs_hexadecimal',
+      'settings'    => array(
+        'min_length' => 4,
+        'max_length' => 4,
+        ),
+      );
+
+  // 1 Byte field
+  $fields['yubivs_yubikey_use'] = array(
+      'field_name' => 'yubivs_yubikey_use',
+      'cardinality' => 1,
+      'type'        => 'field_yubivs_hexadecimal',
+      'settings'    => array(
+        'min_length' => 2,
+        'max_length' => 2,
+        ),
+      );
   return $fields;
 }
 
@@ -39,6 +72,42 @@ function _yubivs_installed_instances() {
       'bundle' => 'yubivs_client',
       'entity_type' => 'node',
       'label'       => $t('The shared key with client.'),
+      'widget'      => array(
+        'type'    => 'yubivs_fields_hexadecimal_widget',
+        ),
+      'display' => array(
+        'yubivs_fields_hexadecimal_formatter' => array(),
+        ),
+      );
+  $instances['yubivs_yubikey_timestamp'] = array(
+      'field_name' => 'yubivs_yubikey_timestamp',
+      'bundle' => 'yubivs_yubikey',
+      'entity_type' => 'node',
+      'label'       => $t('The timestamp in last yubikey otp used.'),
+      'widget'      => array(
+        'type'    => 'yubivs_fields_hexadecimal_widget',
+        ),
+      'display' => array(
+        'yubivs_fields_hexadecimal_formatter' => array(),
+        ),
+      );
+  $instances['yubivs_yubikey_counter'] = array(
+      'field_name' => 'yubivs_yubikey_counter',
+      'bundle' => 'yubivs_yubikey',
+      'entity_type' => 'node',
+      'label'       => $t('Session counter of yubikey.'),
+      'widget'      => array(
+        'type'    => 'yubivs_fields_hexadecimal_widget',
+        ),
+      'display' => array(
+        'yubivs_fields_hexadecimal_formatter' => array(),
+        ),
+      );
+  $instances['yubivs_yubikey_use'] = array(
+      'field_name' => 'yubivs_yubikey_use',
+      'bundle' => 'yubivs_yubikey',
+      'entity_type' => 'node',
+      'label'       => $t('Session use counter of yubikey.'),
       'widget'      => array(
         'type'    => 'yubivs_fields_hexadecimal_widget',
         ),

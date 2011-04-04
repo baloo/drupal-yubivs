@@ -88,6 +88,12 @@ function yubivs_node_info() {
       'description' => $t('A yubikey key validation server client is a client allowed to verify otp  against this service'),
       'title_label' => $t('Client id'),
       ),
+    'yubivs_yubikey' => array(
+      'name' => $t('Yubikey'),
+      'base' => 'yubivs_yubikey',
+      'description' => $t('Yubikey node storage'),
+      'title_label' => $t('Yubikey Public id'),
+      ),
     );
 }
 // }}}
@@ -114,6 +120,22 @@ function yubivs_ksm_form($node, $form_state) {
  * Implements hook_form().
  */
 function yubivs_client_form($node, $form_state) {
+  $type = node_type_get_type($node);
+  $form['title'] = array(
+    '#type' => 'textfield', 
+    '#title' => check_plain($type->title_label), 
+    '#default_value' => !empty($node->title) ? $node->title : '', 
+    '#required' => TRUE, 
+    '#weight' => -5,
+  );
+  return $form;
+}
+
+
+/**
+ * Implements hook_form().
+ */
+function yubivs_yubikey_form($node, $form_state) {
   $type = node_type_get_type($node);
   $form['title'] = array(
     '#type' => 'textfield', 
