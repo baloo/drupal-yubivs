@@ -120,6 +120,15 @@ class Yubivs_Request_Processor_ClientIdLookup extends Yubivs_Request_Processor {
 // }}}
 
 
+// {{{ Replay check
+class Yubivs_Request_Processor_ReplayCheck extends Yubivs_Request_Processor {
+  public function process(Yubivs_Request $request) {
+    
+  }
+}
+// }}}
+
+
 // {{{ Signature validation 
 class Yubivs_Request_Processor_RequestSignatureStringBuild extends Yubivs_Request_Processor_SignatureTools {
   public function process(Yubivs_Request $request) {
@@ -312,8 +321,10 @@ class Yubivs_Request_Processor_AddT extends Yubivs_Request_Processor {
 
 class Yubivs_Request_Processor_AddTimestamp extends Yubivs_Request_Processor {
   public function process(Yubivs_Request $request) {
-    $request->response['timestamp'] = $request->decrypted_data['high'].
-      $request->decrypted_data['low'];
+    if (!empty($request->timestamp) && $request->timestamp == 1) {
+      $request->response['timestamp'] = $request->decrypted_data['high'].
+        $request->decrypted_data['low'];
+    }
     return Yubivs_Request::STATUS_OK;
   }
 }
@@ -321,7 +332,9 @@ class Yubivs_Request_Processor_AddTimestamp extends Yubivs_Request_Processor {
 
 class Yubivs_Request_Processor_AddSessionCounter extends Yubivs_Request_Processor {
   public function process(Yubivs_Request $request) {
-    $request->response['sessioncounter'] = $request->decrypted_data['counter'];
+    if (!empty($request->timestamp) && $request->timestamp == 1) {
+      $request->response['sessioncounter'] = $request->decrypted_data['counter'];
+    }
     return Yubivs_Request::STATUS_OK;
   }
 }
@@ -329,7 +342,9 @@ class Yubivs_Request_Processor_AddSessionCounter extends Yubivs_Request_Processo
 
 class Yubivs_Request_Processor_AddSessionUse extends Yubivs_Request_Processor {
   public function process(Yubivs_Request $request) {
-    $request->response['sessionuse'] = $request->decrypted_data['use'];
+    if (!empty($request->timestamp) && $request->timestamp == 1) {
+      $request->response['sessionuse'] = $request->decrypted_data['use'];
+    }
     return Yubivs_Request::STATUS_OK;
   }
 }
@@ -337,7 +352,10 @@ class Yubivs_Request_Processor_AddSessionUse extends Yubivs_Request_Processor {
 
 class Yubivs_Request_Processor_AddSl extends Yubivs_Request_Processor {
   public function process(Yubivs_Request $request) {
-    $request->response['sl'] = 100;
+    if (version_compare($request->api_version, YUBIVS_API_VER_20, '>=')) {
+      // TODO to implement
+      $request->response['sl'] = 100;
+    }
     return Yubivs_Request::STATUS_OK;
   }
 }
