@@ -205,4 +205,16 @@ function yubivs_fields_field_widget_error($element, $error, $form, &$form_state)
 // }}}
 
 
+// {{{ Fields behaviour
+function yubivs_fields_field_presave($entity_type, $entity, $field, $instance, $langcode, &$items) {
+  if ($field['type'] == 'field_yubivs_hexadecimal') {
+    foreach ($items as $delta => $item) {
+      if (isset($item['value'])) {
+        $items[$delta]['value'] = str_pad($item['value'], $field['settings']['min_length'], '0', STR_PAD_LEFT);
+      }
+    }
+  }
+}
+// }}}
+
 
