@@ -41,6 +41,8 @@ class Yubivs_Request {
   public $decrypted_data;
   // This request signature
   public $signature;
+  // The yubikey envolved
+  public $yubikey;
   // This response
   public $response;
   public $status;
@@ -75,11 +77,13 @@ class Yubivs_Request {
     $result = self::STATUS_OK;
     foreach($this->request_backends as $backend) {
       $result |= $backend->process($this);
+      $this->status = $result;
 
       if($result !== self::STATUS_OK) {
         break;
       }
     }
+
     return $result;
   }
 
@@ -117,8 +121,8 @@ class Yubivs_Request {
    */
   public function log($message, $return = self::STATUS_NAN) {
     // TODO implement this function with watchdog stuff and backtrace 
-   var_dump($message);
-    dsm($message);
+////   var_dump($message);
+    drupal_set_message($message, 'warning');
   }
 }
 // }}}
@@ -161,25 +165,7 @@ function yubivs_verify($api_version) {
   // Populate response
   $status = $request->respond();
 
-  
-
-//  switch($status) {
-//    case Yubivs_Request::STATUS_OK:
-//    case Yubivs_Request::STATUS_BAD_OTP:
-//    case Yubivs_Request::STATUS_REPLAYED_OTP:
-//    case Yubivs_Request::STATUS_BAD_SIGNATURE:
-//    case Yubivs_Request::STATUS_MISSING_PARAMETER:
-//    case Yubivs_Request::STATUS_NO_SUCH_CLIENT:
-//    case Yubivs_Request::STATUS_OPERATION_NOT_ALLOWED:
-//    case Yubivs_Request::STATUS_BACKEND_ERROR:
-//    case Yubivs_Request::STATUS_NOT_ENOUGH_ANSWERS:
-//    case Yubivs_Request::STATUS_REPLAYED_REQUEST:
-//      dsm($status);
-//      break;
-//  }
-
-
-  return _yubivs_format_output($status, $request);
+  return _yubivs_format_output($request);
 }
 // }}}
 
@@ -220,7 +206,10 @@ function _yubivs_populate_request_processors($request) {
     'Yubivs_Request_Processor_RequestSignatureStringBuild',
     'Yubivs_Request_Processor_RequestSignatureGenerate',
     'Yubivs_Request_Processor_RequestSignatureValidate',
+    'Yubivs_Request_Processor_YubikeyLookup',
     'Yubivs_Request_Processor_DecryptOtp',
+    'Yubivs_Request_Processor_ReplayCheck',
+    'Yubivs_Request_Processor_SaveCounters',
     );
   foreach($processors as $processor) {
     $request->addRequestBackend(new $processor());
@@ -231,11 +220,10 @@ function _yubivs_populate_request_processors($request) {
 /**
  * This function formats api output
  */
-function _yubivs_format_output($status, $request) {
+function _yubivs_format_output($request) {
   $return = array();
 
   // This part is enougth for api
-  $return['#result'] = $status;
   $return['#request'] = $request;
 
   // This part formats optionnal debug
@@ -244,14 +232,28 @@ function _yubivs_format_output($status, $request) {
     '#title' => t('Result'),
     '#collapsible' => FALSE,
     'content' => array(
-      'result' => array(
-        '#markup' => '<p>'. t('Result is : @result (%hexval)', array(
-          '@result' => $status,
-          '%hexval' => sprintf('%04x', $status),
-          )) .'</p',
-        ),
+      '#type' => 'fieldset',
+      '#title' => t('Result parameters'),
+      '#collapsible' => TRUE,
+      '#collapsed' => TRUE,
+      ),
+    'result' => array(
+      '#weight' => -1,
+      '#markup' => t('@result (%hexval)', array(
+        '@result' => $request->status,
+        '%hexval' => sprintf('%04x', $request->status),
+        )),
+       '#type' => 'item',
+       '#title' => t('Result'),
       ),
     );
+  foreach($request->response as $name => $element) {
+    $return['result']['content'][$name] = array(
+      '#markup' => check_plain($element),
+      '#type' => 'item',
+      '#title' => check_plain($name),
+      );
+  }
   $return['process'] = array(
     '#type' => 'fieldset',
     '#collapsible' => TRUE,
@@ -270,7 +272,7 @@ function _yubivs_format_output($status, $request) {
         '#markup' => t('%constname (%value) is %status', array(
           '%constname' => drupal_substr($constname, 7),
           '%value' => sprintf('%04x', $value),
-          '%status' => (($status & $value) || ($status == $value))? t('enabled'): t('disabled'),
+          '%status' => (($request->status & $value) || ($request->status == $value))? t('enabled'): t('disabled'),
           )),
         );
     }

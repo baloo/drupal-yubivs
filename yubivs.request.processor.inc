@@ -117,14 +117,89 @@ class Yubivs_Request_Processor_ClientIdLookup extends Yubivs_Request_Processor {
     return Yubivs_Request::STATUS_NO_SUCH_CLIENT;
   }
 }
+
+
+class Yubivs_Request_Processor_YubikeyLookup extends Yubivs_Request_Processor {
+  public function process(Yubivs_Request $request) {
+    $publicid = substr($request->otp, 0, -32);
+
+    $yubikey_nid = db_select('node', 'n')
+                    ->fields('n', array('nid'))
+                    ->condition('type', 'yubivs_yubikey')
+                    ->condition('title', check_plain($publicid))
+                    ->range(0,1)
+                    ->execute()
+                    ->fetchField();
+    if (is_numeric($yubikey_nid)) {
+      $yubikey = node_load(intval($yubikey_nid));
+      if ($yubikey instanceof stdClass) {
+        $request->yubikey = $yubikey;
+        return Yubivs_Request::STATUS_OK;
+      }
+    }
+    $request->log('Can\'t find yubikey public', Yubivs_Request::STATUS_BAD_OTP);
+    return Yubivs_Request::STATUS_BAD_OTP;
+  }
+}
 // }}}
 
 
 // {{{ Replay check
 class Yubivs_Request_Processor_ReplayCheck extends Yubivs_Request_Processor {
   public function process(Yubivs_Request $request) {
-    
-  }
+    dsm($request);
+
+    if (isset($request->yubikey) &&
+      isset($request->yubikey->language) &&
+      isset($request->yubikey->yubivs_yubikey_counter[$request->yubikey->language]) &&
+      isset($request->yubikey->yubivs_yubikey_counter[$request->yubikey->language][0]['value']) &&
+      isset($request->yubikey->yubivs_yubikey_use[$request->yubikey->language]) &&
+      isset($request->yubikey->yubivs_yubikey_use[$request->yubikey->language][0]['value']) &&
+      isset($request->decrypted_data['counter']) &&
+      !empty($request->decrypted_data['counter']) &&
+      isset($request->decrypted_data['use']) &&
+      TRUE){
+      $current_counter = $request->yubikey->yubivs_yubikey_counter[$request->yubikey->language][0]['value'];
+      $current_use = $request->yubikey->yubivs_yubikey_use[$request->yubikey->language][0]['value'];
+
+      if ($current_counter < $request->decrypted_data['counter']) {
+        return Yubivs_Request::STATUS_OK;
+      } elseif ($current_counter == $request->decrypted_data['counter']) {
+        if ($current_use < $request->decrypted_data['use']) {
+          return Yubivs_Request::STATUS_OK;
+        }
+      }
+      $request->log('Replayed otp', Yubivs_Request::STATUS_REPLAYED_OTP);
+      return Yubivs_Request::STATUS_REPLAYED_OTP;
+    }
+    $request->log('Missing parameter', Yubivs_Request::STATUS_MISSING_PARAMETER);
+    return Yubivs_Request::STATUS_MISSING_PARAMETER;
+   }
+}
+
+
+class Yubivs_Request_Processor_SaveCounters extends Yubivs_Request_Processor {
+  public function process(Yubivs_Request $request) {
+    if (isset($request->yubikey) &&
+      isset($request->yubikey->language) &&
+      isset($request->yubikey->yubivs_yubikey_counter[$request->yubikey->language]) &&
+      isset($request->yubikey->yubivs_yubikey_counter[$request->yubikey->language][0]['value']) &&
+      isset($request->yubikey->yubivs_yubikey_use[$request->yubikey->language]) &&
+      isset($request->yubikey->yubivs_yubikey_use[$request->yubikey->language][0]['value']) &&
+      isset($request->decrypted_data['counter']) &&
+      !empty($request->decrypted_data['counter']) &&
+      isset($request->decrypted_data['use']) &&
+      TRUE){
+
+      $request->yubikey->yubivs_yubikey_counter[$request->yubikey->language][0]['value'] = $request->decrypted_data['counter'];
+      $request->yubikey->yubivs_yubikey_use[$request->yubikey->language][0]['value'] = $request->decrypted_data['use'];
+
+      node_save($request->yubikey);
+      return Yubivs_Request::STATUS_OK;
+    }
+    $request->log('Missing parameter', Yubivs_Request::STATUS_MISSING_PARAMETER);
+    return Yubivs_Request::STATUS_MISSING_PARAMETER;
+   }
 }
 // }}}
 
@@ -158,7 +233,7 @@ class Yubivs_Request_Processor_RequestSignatureGenerate extends Yubivs_Request_P
       } else {
         $request->log('Signature returned an error', Yubivs_Request::STATUS_BACKEND_ERROR);
         return Yubivs_Request::STATUS_BACKEND_ERROR;
-       }
+      }
     }
 
     $request->log('Missing a parameter to regenerate request signature', Yubivs_Request::STATUS_BACKEND_ERROR);
@@ -178,7 +253,7 @@ class Yubivs_Request_Processor_RequestSignatureValidate extends Yubivs_Request_P
       } else {
         $request->log('Signature mismatch', Yubivs_Request::STATUS_BAD_SIGNATURE);
         return Yubivs_Request::STATUS_BAD_SIGNATURE;
-       }
+      }
     }
     $request->log('Signature miss parameters', Yubivs_Request::STATUS_BACKEND_ERROR);
     return Yubivs_Request::STATUS_BACKEND_ERROR;
@@ -192,7 +267,8 @@ class Yubivs_Request_Processor_ResponseSignatureStringBuild extends Yubivs_Reque
     $elements = array();
 
     foreach ($element_names as $name) {
-      $elements[$name] = $request->response[$name];
+      if (isset($request->response[$name]))
+        $elements[$name] = $request->response[$name];
     }
 
     $request->signature['response_base_str'] = $this->_buildString($elements);
@@ -321,7 +397,7 @@ class Yubivs_Request_Processor_AddT extends Yubivs_Request_Processor {
 
 class Yubivs_Request_Processor_AddTimestamp extends Yubivs_Request_Processor {
   public function process(Yubivs_Request $request) {
-    if (!empty($request->timestamp) && $request->timestamp == 1) {
+    if (!empty($request->timestamp) && $request->timestamp == 1 && $request->status == Yubivs_Request::STATUS_OK) {
       $request->response['timestamp'] = $request->decrypted_data['high'].
         $request->decrypted_data['low'];
     }
@@ -332,7 +408,7 @@ class Yubivs_Request_Processor_AddTimestamp extends Yubivs_Request_Processor {
 
 class Yubivs_Request_Processor_AddSessionCounter extends Yubivs_Request_Processor {
   public function process(Yubivs_Request $request) {
-    if (!empty($request->timestamp) && $request->timestamp == 1) {
+    if (!empty($request->timestamp) && $request->timestamp == 1 && $request->status == Yubivs_Request::STATUS_OK) {
       $request->response['sessioncounter'] = $request->decrypted_data['counter'];
     }
     return Yubivs_Request::STATUS_OK;
@@ -342,7 +418,7 @@ class Yubivs_Request_Processor_AddSessionCounter extends Yubivs_Request_Processo
 
 class Yubivs_Request_Processor_AddSessionUse extends Yubivs_Request_Processor {
   public function process(Yubivs_Request $request) {
-    if (!empty($request->timestamp) && $request->timestamp == 1) {
+    if (!empty($request->timestamp) && $request->timestamp == 1 && $request->status == Yubivs_Request::STATUS_OK) {
       $request->response['sessionuse'] = $request->decrypted_data['use'];
     }
     return Yubivs_Request::STATUS_OK;
