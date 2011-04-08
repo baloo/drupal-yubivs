@@ -2,7 +2,7 @@
 // vim: set foldmethod=marker sw=2 ts=2 et:
 /**
  * @file
- * This file provides verification callbacks for 
+ * This file provides verification callbacks for
  * yubikey validation server service
  */
 
@@ -37,7 +37,7 @@ class Yubivs_Request {
   public $nonce;
 
 
-  // Populated by request processors 
+  // Populated by request processors
   public $decrypted_data;
   // This request signature
   public $signature;
@@ -75,11 +75,11 @@ class Yubivs_Request {
    */
   public function verify() {
     $result = self::STATUS_OK;
-    foreach($this->request_backends as $backend) {
+    foreach ($this->request_backends as $backend) {
       $result |= $backend->process($this);
       $this->status = $result;
 
-      if($result !== self::STATUS_OK) {
+      if ($result !== self::STATUS_OK) {
         break;
       }
     }
@@ -93,7 +93,7 @@ class Yubivs_Request {
    */
   public function respond() {
     $result = self::STATUS_OK;
-    foreach($this->response_backends as $backend) {
+    foreach ($this->response_backends as $backend) {
       $result |= $backend->process($this);
     }
     return $result;
@@ -120,9 +120,9 @@ class Yubivs_Request {
    * Logger function
    */
   public function log($message, $return = self::STATUS_NAN) {
-    // TODO implement this function with watchdog stuff and backtrace 
+    // TODO implement this function with watchdog stuff and backtrace
 ////   var_dump($message);
-    drupal_set_message($message, 'warning');
+    drupal_set_message(check_plain($message), 'warning');
   }
 }
 // }}}
@@ -194,7 +194,7 @@ function _yubivs_populate_response_processors($request) {
   $processors = $pre_processors + $default_processors + $post_processors;
   module_invoke_all('yubivs_response_processors_alter', $processors);
 
-  foreach($processors as $processor) {
+  foreach ($processors as $processor) {
     $request->addResponseBackend(new $processor());
   }
 }
@@ -226,7 +226,7 @@ function _yubivs_populate_request_processors($request) {
   $processors = $pre_processors + $default_processors + $post_processors;
   module_invoke_all('yubivs_request_processors_alter', $processors);
 
-  foreach($processors as $processor) {
+  foreach ($processors as $processor) {
     $request->addRequestBackend(new $processor());
   }
 }
@@ -243,7 +243,7 @@ function _yubivs_format_output($request) {
 
   // This part formats optionnal debug
   $return['result'] = array(
-    '#type' => 'fieldset', 
+    '#type' => 'fieldset',
     '#title' => t('Result'),
     '#collapsible' => FALSE,
     'content' => array(
@@ -262,7 +262,7 @@ function _yubivs_format_output($request) {
        '#title' => t('Result'),
       ),
     );
-  foreach($request->response as $name => $element) {
+  foreach ($request->response as $name => $element) {
     $return['result']['content'][$name] = array(
       '#markup' => check_plain($element),
       '#type' => 'item',

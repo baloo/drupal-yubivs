@@ -46,13 +46,13 @@ function yubivs_fields_field_validate($entity_type, $entity, $field, $instance, 
       if ($len > $field['settings']['max_length']) {
         $errors[$field['field_name']][$langcode][$delta][] = array(
           'error' => 'yubivs_fields_hexadecimal_too_wide',
-          'message' => t('Field must be @length long at most.', array('@length'=>$field['settings']['max_length'])),
+          'message' => t('Field must be @length long at most.', array('@length' => $field['settings']['max_length'])),
         );
       }
       if ($len < $field['settings']['min_length']) {
         $errors[$field['field_name']][$langcode][$delta][] = array(
           'error' => 'yubivs_fields_hexadecimal_too_narrow',
-          'message' => t('Field must be @length long at least.', array('@length'=>$field['settings']['min_length'])),
+          'message' => t('Field must be @length long at least.', array('@length' => $field['settings']['min_length'])),
         );
       }
     }
@@ -80,25 +80,25 @@ function yubivs_fields_field_settings_form($field, $instance, $has_data) {
   switch ($field['type']) {
   case 'field_yubivs_hexadecimal':
     $form['max_length'] = array(
-      '#type' => 'textfield', 
-      '#title' => t('Maximum length'), 
-      '#default_value' => @$settings['max_length'], 
-      '#required' => TRUE, 
-      '#description' => t('The maximum length of the field in characters.'), 
+      '#type' => 'textfield',
+      '#title' => t('Maximum length'),
+      '#default_value' => @$settings['max_length'],
+      '#required' => TRUE,
+      '#description' => t('The maximum length of the field in characters.'),
       '#element_validate' => array('_element_validate_integer_positive'),
       // @todo: If $has_data, add a validate handler that only allows
-      // max_length to increase. 
+      // max_length to increase.
       '#disabled' => $has_data,
     );
     $form['min_length'] = array(
-      '#type' => 'textfield', 
-      '#title' => t('Minimum length'), 
-      '#default_value' => @$settings['min_length'], 
-      '#required' => TRUE, 
-      '#description' => t('The minimum length of the field in characters.'), 
+      '#type' => 'textfield',
+      '#title' => t('Minimum length'),
+      '#default_value' => @$settings['min_length'],
+      '#required' => TRUE,
+      '#description' => t('The minimum length of the field in characters.'),
       '#element_validate' => array('_element_validate_integer_positive'),
       // @todo: If $has_data, add a validate handler that only allows
-      // max_length to increase. 
+      // max_length to increase.
       '#disabled' => $has_data,
     );
     break;
@@ -179,8 +179,8 @@ function yubivs_fields_field_widget_form(&$form, &$form_state, $field, $instance
       $main_element += $element + array(
         '#type' => 'textfield',
         '#default_value' => $value,
-        '#title' => $instance['label'],
-        '#description' => $instance['description'],
+        '#title' => check_plain($instance['label']),
+        '#description' => check_plain($instance['description']),
       );
       break;
   }

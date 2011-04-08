@@ -17,14 +17,14 @@ define('YUBIVS_API_VER_10', '1.0');
 // {{{ Menu stuff
 /**
  * Implements hook_menu().
- **/
+ */
 function yubivs_menu() {
   $items = array();
 
-  // TODO: Implement access callback to handle enable 
+  // TODO: Implement access callback to handle enable
   //       access to whether V1 or V2 protocol
 
-  // TODO: Implement deliver callback to format response 
+  // TODO: Implement deliver callback to format response
   //       with private sign
 
   // ValidationProtocolV20
@@ -66,7 +66,7 @@ function yubivs_menu() {
  */
 function yubivs_deliver_callback($content) {
   foreach ($content['#request']->response as $name => $response) {
-    echo $name .'='. $response."\r\n";
+    echo $name . '=' . $response . "\r\n";
   }
 }
 
@@ -123,10 +123,10 @@ function yubivs_node_info() {
 function yubivs_ksm_form($node, $form_state) {
   $type = node_type_get_type($node);
   $form['title'] = array(
-    '#type' => 'textfield', 
-    '#title' => check_plain($type->title_label), 
-    '#default_value' => !empty($node->title) ? $node->title : '', 
-    '#required' => TRUE, 
+    '#type' => 'textfield',
+    '#title' => check_plain($type->title_label),
+    '#default_value' => !empty($node->title) ? $node->title : '',
+    '#required' => TRUE,
     '#weight' => -5,
   );
   return $form;
@@ -139,10 +139,10 @@ function yubivs_ksm_form($node, $form_state) {
 function yubivs_client_form($node, $form_state) {
   $type = node_type_get_type($node);
   $form['title'] = array(
-    '#type' => 'textfield', 
-    '#title' => check_plain($type->title_label), 
-    '#default_value' => !empty($node->title) ? $node->title : '', 
-    '#required' => TRUE, 
+    '#type' => 'textfield',
+    '#title' => check_plain($type->title_label),
+    '#default_value' => !empty($node->title) ? $node->title : '',
+    '#required' => TRUE,
     '#weight' => -5,
   );
   return $form;
@@ -155,10 +155,10 @@ function yubivs_client_form($node, $form_state) {
 function yubivs_yubikey_form($node, $form_state) {
   $type = node_type_get_type($node);
   $form['title'] = array(
-    '#type' => 'textfield', 
-    '#title' => check_plain($type->title_label), 
-    '#default_value' => !empty($node->title) ? $node->title : '', 
-    '#required' => TRUE, 
+    '#type' => 'textfield',
+    '#title' => check_plain($type->title_label),
+    '#default_value' => !empty($node->title) ? $node->title : '',
+    '#required' => TRUE,
     '#weight' => -5,
   );
   return $form;

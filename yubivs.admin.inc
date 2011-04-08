@@ -2,7 +2,7 @@
 // vim: set foldmethod=marker sw=2 ts=2 et:
 /**
  * @file
- * This file provides administration pages for yubikey 
+ * This file provides administration pages for yubikey
  * validation server service
  */
 

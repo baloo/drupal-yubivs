@@ -2,29 +2,29 @@
 // vim: set foldmethod=marker sw=2 ts=2 et:
 /**
  * @file
- * This install files defines schema for fields required by yubikey 
+ * This install files defines schema for fields required by yubikey
  * validation server module
  */
 
 
 // {{{ Field schema
 /**
- * Implements hook_field_schema
+ * Implements hook_field_schema().
  */
 function yubivs_fields_field_schema($field) {
   switch ($field['type']) {
     case 'field_yubivs_hexadecimal':
       $columns = array(
         'value' => array(
-          'type' => 'varchar', 
-          'length' => $field['settings']['max_length'], 
+          'type' => 'varchar',
+          'length' => $field['settings']['max_length'],
           'not null' => FALSE,
         ),
       );
       break;
   }
   return array(
-    'columns' => $columns, 
+    'columns' => $columns,
   );
 }
 // }}}

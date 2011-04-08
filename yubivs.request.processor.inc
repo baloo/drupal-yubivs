@@ -15,13 +15,13 @@ abstract class Yubivs_Request_Processor {
    * Callback function for validation request processing
    */
   abstract public function process(Yubivs_Request $request);
-} 
+}
 
 
 // {{{ Parameters verification processors
 class Yubivs_Request_Processor_ClientIdMandatory extends Yubivs_Request_Processor {
   public function process(Yubivs_Request $request) {
-    if(empty($request->id)) {
+    if (empty($request->id)) {
       $request->log('Client id is empty while required by protocol', Yubivs_Request::STATUS_MISSING_PARAMETER);
       return Yubivs_Request::STATUS_MISSING_PARAMETER;
     }
@@ -32,8 +32,8 @@ class Yubivs_Request_Processor_ClientIdMandatory extends Yubivs_Request_Processo
 
 class Yubivs_Request_Processor_SignatureMandatory extends Yubivs_Request_Processor {
   public function process(Yubivs_Request $request) {
-    if(variable_get('yubivs_mandatory_signature', FALSE)) {
-      if(empty($request->h)) {
+    if (variable_get('yubivs_mandatory_signature', FALSE)) {
+      if (empty($request->h)) {
         $request->log('Signature is empty while required by setup', Yubivs_Request::STATUS_BAD_SIGNATURE);
         return Yubivs_Request::STATUS_BAD_SIGNATURE;
       }
@@ -45,8 +45,8 @@ class Yubivs_Request_Processor_SignatureMandatory extends Yubivs_Request_Process
 
 class Yubivs_Request_Processor_TimestampMandatory extends Yubivs_Request_Processor {
   public function process(Yubivs_Request $request) {
-    if(variable_get('yubivs_mandatory_timestamp', FALSE)) {
-      if(empty($request->timestamp)) {
+    if (variable_get('yubivs_mandatory_timestamp', FALSE)) {
+      if (empty($request->timestamp)) {
         $request->log('Timestamp is empty while required by setup', Yubivs_Request::STATUS_MISSING_PARAMETER);
         return Yubivs_Request::STATUS_MISSING_PARAMETER;
       }
@@ -58,8 +58,8 @@ class Yubivs_Request_Processor_TimestampMandatory extends Yubivs_Request_Process
 
 class Yubivs_Request_Processor_NonceMandatory extends Yubivs_Request_Processor {
   public function process(Yubivs_Request $request) {
-    if(version_compare($request->api_version, YUBIVS_API_VER_20, '>=')) {
-      if(empty($request->nonce)) {
+    if (version_compare($request->api_version, YUBIVS_API_VER_20, '>=')) {
+      if (empty($request->nonce)) {
         $request->log('Nonce is mandatory in version 2 protocol', Yubivs_Request::STATUS_MISSING_PARAMETER);
         return Yubivs_Request::STATUS_MISSING_PARAMETER;
       }
@@ -71,7 +71,7 @@ class Yubivs_Request_Processor_NonceMandatory extends Yubivs_Request_Processor {
 
 class Yubivs_Request_Processor_OtpMandatory extends Yubivs_Request_Processor {
   public function process(Yubivs_Request $request) {
-    if(empty($request->otp)) {
+    if (empty($request->otp)) {
       $request->log('Otp is required for validating otp', Yubivs_Request::STATUS_MISSING_PARAMETER);
       return Yubivs_Request::STATUS_MISSING_PARAMETER;
     }
@@ -89,23 +89,23 @@ class Yubivs_Request_Processor_OtpRegexp extends Yubivs_Request_Processor {
     return Yubivs_Request::STATUS_OK;
   }
 }
-//  }}} 
+//  }}}
 
 
-// {{{ Additional informations 
+// {{{ Additional informations
 class Yubivs_Request_Processor_ClientIdLookup extends Yubivs_Request_Processor {
   public function process(Yubivs_Request $request) {
     $client_nid = db_select('node', 'n')
                       ->fields('n', array('nid'))
                       ->condition('type', 'yubivs_client')
                       ->condition('title', check_plain($request->id))
-                      ->range(0,1)
+                      ->range(0, 1)
                       ->execute()
                       ->fetchField();
     if (is_numeric($client_nid)) {
       $client = node_load(intval($client_nid));
       if ($client instanceof stdClass) {
-        if (isset($client->yubivs_client_shared_key) && 
+        if (isset($client->yubivs_client_shared_key) &&
             isset($client->yubivs_client_shared_key[$client->language])) {
           $shared_key = reset($client->yubivs_client_shared_key[$client->language]);
           $request->signature['shared_key'] = $shared_key['value'];
@@ -121,13 +121,13 @@ class Yubivs_Request_Processor_ClientIdLookup extends Yubivs_Request_Processor {
 
 class Yubivs_Request_Processor_YubikeyLookup extends Yubivs_Request_Processor {
   public function process(Yubivs_Request $request) {
-    $publicid = substr($request->otp, 0, -32);
+    $publicid = drupal_substr($request->otp, 0, -32);
 
     $yubikey_nid = db_select('node', 'n')
                     ->fields('n', array('nid'))
                     ->condition('type', 'yubivs_yubikey')
                     ->condition('title', check_plain($publicid))
-                    ->range(0,1)
+                    ->range(0, 1)
                     ->execute()
                     ->fetchField();
     if (is_numeric($yubikey_nid)) {
@@ -155,14 +155,14 @@ class Yubivs_Request_Processor_ReplayCheck extends Yubivs_Request_Processor {
       isset($request->yubikey->yubivs_yubikey_use[$request->yubikey->language][0]['value']) &&
       isset($request->decrypted_data['counter']) &&
       !empty($request->decrypted_data['counter']) &&
-      isset($request->decrypted_data['use']) &&
-      TRUE){
+      isset($request->decrypted_data['use'])) {
       $current_counter = $request->yubikey->yubivs_yubikey_counter[$request->yubikey->language][0]['value'];
       $current_use = $request->yubikey->yubivs_yubikey_use[$request->yubikey->language][0]['value'];
 
       if ($current_counter < $request->decrypted_data['counter']) {
         return Yubivs_Request::STATUS_OK;
-      } elseif ($current_counter == $request->decrypted_data['counter']) {
+      }
+      elseif ($current_counter == $request->decrypted_data['counter']) {
         if ($current_use < $request->decrypted_data['use']) {
           return Yubivs_Request::STATUS_OK;
         }
@@ -172,7 +172,7 @@ class Yubivs_Request_Processor_ReplayCheck extends Yubivs_Request_Processor {
     }
     $request->log('Missing parameter', Yubivs_Request::STATUS_MISSING_PARAMETER);
     return Yubivs_Request::STATUS_MISSING_PARAMETER;
-   }
+  }
 }
 
 
@@ -186,8 +186,7 @@ class Yubivs_Request_Processor_SaveCounters extends Yubivs_Request_Processor {
       isset($request->yubikey->yubivs_yubikey_use[$request->yubikey->language][0]['value']) &&
       isset($request->decrypted_data['counter']) &&
       !empty($request->decrypted_data['counter']) &&
-      isset($request->decrypted_data['use']) &&
-      TRUE){
+      isset($request->decrypted_data['use'])) {
 
       $request->yubikey->yubivs_yubikey_counter[$request->yubikey->language][0]['value'] = $request->decrypted_data['counter'];
       $request->yubikey->yubivs_yubikey_use[$request->yubikey->language][0]['value'] = $request->decrypted_data['use'];
@@ -197,12 +196,12 @@ class Yubivs_Request_Processor_SaveCounters extends Yubivs_Request_Processor {
     }
     $request->log('Missing parameter', Yubivs_Request::STATUS_MISSING_PARAMETER);
     return Yubivs_Request::STATUS_MISSING_PARAMETER;
-   }
+  }
 }
 // }}}
 
 
-// {{{ Signature validation 
+// {{{ Signature validation
 class Yubivs_Request_Processor_RequestSignatureStringBuild extends Yubivs_Request_Processor_SignatureTools {
   public function process(Yubivs_Request $request) {
     $element_names = array('id', 'otp', 'timestamp', 'nonce', 'sl', 'timeout');
@@ -228,7 +227,8 @@ class Yubivs_Request_Processor_RequestSignatureGenerate extends Yubivs_Request_P
       $request->signature['request_signature'] = $this->_sign($request->signature ['request_base_str'], $request->signature['shared_key']);
       if (is_string($request->signature['request_signature'])) {
         return Yubivs_Request::STATUS_OK;
-      } else {
+      }
+      else {
         $request->log('Signature returned an error', Yubivs_Request::STATUS_BACKEND_ERROR);
         return Yubivs_Request::STATUS_BACKEND_ERROR;
       }
@@ -242,20 +242,21 @@ class Yubivs_Request_Processor_RequestSignatureGenerate extends Yubivs_Request_P
 
 class Yubivs_Request_Processor_RequestSignatureValidate extends Yubivs_Request_Processor {
   public function process(Yubivs_Request $request) {
-   if (isset($request  ->h) &&
+    if (isset($request  ->h) &&
         !empty($request->h) &&
         isset($request ->signature['request_signature']) &&
         !empty($request->signature['request_signature'])) {
       if ($request->h === $request->signature['request_signature']) {
         return Yubivs_Request::STATUS_OK;
-      } else {
+      }
+      else {
         $request->log('Signature mismatch', Yubivs_Request::STATUS_BAD_SIGNATURE);
         return Yubivs_Request::STATUS_BAD_SIGNATURE;
       }
     }
     $request->log('Signature miss parameters', Yubivs_Request::STATUS_BACKEND_ERROR);
     return Yubivs_Request::STATUS_BACKEND_ERROR;
-   }
+  }
 }
 
 
@@ -286,10 +287,11 @@ class Yubivs_Request_Processor_ResponseSignatureGenerate extends Yubivs_Request_
       if (is_string($request->signature['response_signature'])) {
         $request->response['h'] = $request->signature['response_signature'];
         return Yubivs_Request::STATUS_OK;
-      } else {
+      }
+      else {
         $request->log('Signature returned an error', Yubivs_Request::STATUS_BACKEND_ERROR);
         return Yubivs_Request::STATUS_BACKEND_ERROR;
-       }
+      }
     }
 
     $request->log('Missing a parameter to generate response signature', Yubivs_Request::STATUS_BACKEND_ERROR);
@@ -309,10 +311,10 @@ class Yubivs_Request_Processor_DecryptOtp extends Yubivs_Request_Processor {
 
   public function process(Yubivs_Request $request) {
     $yubiksm = db_select('node', 'n')
-                 ->fields('n', array('nid'))
-                 ->condition('type', 'yubivs_ksm')
-                 ->execute()
-                 ->fetchAll();
+                  ->fields('n', array('nid'))
+                  ->condition('type', 'yubivs_ksm')
+                  ->execute()
+                  ->fetchAll();
     // TODO: implement round robin selection of ksm
     // One way could be : shuffle($yubiksm)
     // TODO: implement ksm sorting
@@ -320,11 +322,11 @@ class Yubivs_Request_Processor_DecryptOtp extends Yubivs_Request_Processor {
       $selected_yubiksm = node_load($selected_yubiksm_id->nid);
       // TODO really implement this function
       $ch = curl_init();
-      $url = $selected_yubiksm->title .'?otp='.$request->otp;
+      $url = $selected_yubiksm->title . '?otp=' . $request->otp;
       curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
-      curl_setopt($ch, CURLOPT_URL, $selected_yubiksm->title .'?otp='.$request->otp);
+      curl_setopt($ch, CURLOPT_URL, $selected_yubiksm->title . '?otp=' . $request->otp);
       $content = curl_exec($ch);
-      if($content === FALSE || curl_errno($ch)) {
+      if ($content === FALSE || curl_errno($ch)) {
         // TODO log failure
         continue;
       }
@@ -341,7 +343,7 @@ class Yubivs_Request_Processor_DecryptOtp extends Yubivs_Request_Processor {
         return Yubivs_Request::STATUS_OK;
       }
 
-      // Unknown format 
+      // Unknown format
       // Giving up and return BACKEND_ERROR
       curl_close($ch);
       break;
@@ -356,7 +358,7 @@ class Yubivs_Request_Processor_DecryptOtp extends Yubivs_Request_Processor {
 // {{{ Response argument handlers
 class Yubivs_Request_Processor_AddStatus extends Yubivs_Request_Processor {
   public function process(Yubivs_Request $request) {
-    switch($request->status) {
+    switch ($request->status) {
       case Yubivs_Request::STATUS_OK:                   $status = 'OK';
         break;
       case Yubivs_Request::STATUS_BAD_OTP:              $status = 'BAD_OTP';
@@ -416,8 +418,7 @@ class Yubivs_Request_Processor_AddOtp extends Yubivs_Request_Processor {
 class Yubivs_Request_Processor_AddTimestamp extends Yubivs_Request_Processor {
   public function process(Yubivs_Request $request) {
     if (!empty($request->timestamp) && $request->timestamp == 1 && $request->status == Yubivs_Request::STATUS_OK) {
-      $request->response['timestamp'] = $request->decrypted_data['high'].
-        $request->decrypted_data['low'];
+      $request->response['timestamp'] = $request->decrypted_data['high'] . $request->decrypted_data['low'];
     }
     return Yubivs_Request::STATUS_OK;
   }
@@ -463,9 +464,9 @@ abstract class Yubivs_Request_Processor_SignatureTools extends Yubivs_Request_Pr
     ksort($parameters, SORT_STRING);
 
     // Build string
-    foreach($parameters as $name => $value) {
+    foreach ($parameters as $name => $value) {
       if (!is_null($value)) {
-        $elements[] = $name .'='. $value;
+        $elements[] = $name . '=' . $value;
       }
     }
 

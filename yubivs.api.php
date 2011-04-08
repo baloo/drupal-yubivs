@@ -13,7 +13,7 @@
 
 /**
  * Adds custom preprocessors to the request processing chain
- * @return 
+ * @return
  *   * String of processor class
  *   * Array of string of processor class
  */
@@ -24,13 +24,13 @@ function hook_yubivs_request_preprocessors() {
 
 /**
  * Adds custom preprocessors to the response processing chain
- * @return 
+ * @return
  *   * String of processor class
  *   * Array of string of processor class
  */
 function hook_yubivs_response_preprocessors() {
   return array(
-    'foobar_Request_Processor_AddYubikeyNodeId', 
+    'foobar_Request_Processor_AddYubikeyNodeId',
     'foobar_Request_Processor_AdditionalInformation',
     );
 }
@@ -38,7 +38,7 @@ function hook_yubivs_response_preprocessors() {
 
 /**
  * Adds custom postprocessors to the request processing chain
- * @return 
+ * @return
  *   * String of processor class
  *   * Array of string of processor class
  */
@@ -49,13 +49,13 @@ function hook_yubivs_request_postprocessors() {
 
 /**
  * Adds custom postprocessors to the response processing chain
- * @return 
+ * @return
  *   * String of processor class
  *   * Array of string of processor class
  */
 function hook_yubivs_response_postprocessors() {
   return array(
-    'foobar_Request_Processor_PublicKeySignature', 
+    'foobar_Request_Processor_PublicKeySignature',
     'foobar_Request_Processor_LogReponse',
     );
 }
