@@ -175,7 +175,7 @@ function yubivs_verify($api_version) {
  * This function adds response processors to a simple request
  */
 function _yubivs_populate_response_processors($request) {
-  $processors = array(
+  $default_processors = array(
     'Yubivs_Request_Processor_AddStatus',
     'Yubivs_Request_Processor_AddT',
     'Yubivs_Request_Processor_AddTimestamp',
@@ -187,6 +187,13 @@ function _yubivs_populate_response_processors($request) {
     'Yubivs_Request_Processor_ResponseSignatureStringBuild',
     'Yubivs_Request_Processor_ResponseSignatureGenerate',
     );
+
+  $pre_processors = module_invoke_all('yubivs_response_preprocessors');
+  $post_processors = module_invoke_all('yubivs_response_postprocessors');
+
+  $processors = $pre_processors + $default_processors + $post_processors;
+  module_invoke_all('yubivs_response_processors_alter', $processors);
+
   foreach($processors as $processor) {
     $request->addResponseBackend(new $processor());
   }
@@ -197,7 +204,7 @@ function _yubivs_populate_response_processors($request) {
  * This function adds request processors to a simple request
  */
 function _yubivs_populate_request_processors($request) {
-  $processors = array(
+  $default_processors = array(
     'Yubivs_Request_Processor_ClientIdMandatory',
     'Yubivs_Request_Processor_SignatureMandatory',
     'Yubivs_Request_Processor_TimestampMandatory',
@@ -213,6 +220,12 @@ function _yubivs_populate_request_processors($request) {
     'Yubivs_Request_Processor_ReplayCheck',
     'Yubivs_Request_Processor_SaveCounters',
     );
+  $pre_processors = module_invoke_all('yubivs_request_preprocessors');
+  $post_processors = module_invoke_all('yubivs_request_postprocessors');
+
+  $processors = $pre_processors + $default_processors + $post_processors;
+  module_invoke_all('yubivs_request_processors_alter', $processors);
+
   foreach($processors as $processor) {
     $request->addRequestBackend(new $processor());
   }
