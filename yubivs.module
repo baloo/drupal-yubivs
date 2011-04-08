@@ -49,9 +49,12 @@ function yubivs_menu() {
   );
 
   $items['admin/config/yubivs'] = array(
-    'page callback' => 'yubivs_admin_settings',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('yubivs_admin_settings'),
     'file' => 'yubivs.admin.inc',
     'type' => MENU_NORMAL_ITEM,
+    'title' => 'Yubikey',
+    'access arguments' => array('access yubikey configuration'),
   );
 
   return $items;
@@ -63,8 +66,22 @@ function yubivs_menu() {
  */
 function yubivs_deliver_callback($content) {
   foreach ($content['#request']->response as $name => $response) {
-    echo $name .'='. $response.chr(10);
+    echo $name .'='. $response."\r\n";
   }
+}
+
+
+/**
+ * Implements hook_permission().
+ */
+function yubivs_permission() {
+  return array(
+    'access yubikey configuration' => array(
+      'description' => t('Access Yubikey validation server configuration'),
+      'title' => t('Access yubikey configuration'),
+      'restrict access' => TRUE,
+      ),
+    );
 }
 // }}}
 
