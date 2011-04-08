@@ -182,6 +182,8 @@ function _yubivs_populate_response_processors($request) {
     'Yubivs_Request_Processor_AddSessionCounter',
     'Yubivs_Request_Processor_AddSessionUse',
     'Yubivs_Request_Processor_AddSl',
+    'Yubivs_Request_Processor_AddNonce',
+    'Yubivs_Request_Processor_AddOtp',
     'Yubivs_Request_Processor_ResponseSignatureStringBuild',
     'Yubivs_Request_Processor_ResponseSignatureGenerate',
     );

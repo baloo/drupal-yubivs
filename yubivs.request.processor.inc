@@ -147,8 +147,6 @@ class Yubivs_Request_Processor_YubikeyLookup extends Yubivs_Request_Processor {
 // {{{ Replay check
 class Yubivs_Request_Processor_ReplayCheck extends Yubivs_Request_Processor {
   public function process(Yubivs_Request $request) {
-    dsm($request);
-
     if (isset($request->yubikey) &&
       isset($request->yubikey->language) &&
       isset($request->yubikey->yubivs_yubikey_counter[$request->yubikey->language]) &&
@@ -263,7 +261,7 @@ class Yubivs_Request_Processor_RequestSignatureValidate extends Yubivs_Request_P
 
 class Yubivs_Request_Processor_ResponseSignatureStringBuild extends Yubivs_Request_Processor_SignatureTools {
   public function process(Yubivs_Request $request) {
-    $element_names = array('t', 'status', 'timestamp', 'sessioncounter', 'sessionuse', 'sl');
+    $element_names = array('t', 'status', 'timestamp', 'sessioncounter', 'sessionuse', 'sl', 'nonce', 'otp');
     $elements = array();
 
     foreach ($element_names as $name) {
@@ -390,6 +388,26 @@ class Yubivs_Request_Processor_AddStatus extends Yubivs_Request_Processor {
 class Yubivs_Request_Processor_AddT extends Yubivs_Request_Processor {
   public function process(Yubivs_Request $request) {
     $request->response['t'] = date('c');
+    return Yubivs_Request::STATUS_OK;
+  }
+}
+
+
+class Yubivs_Request_Processor_AddNonce extends Yubivs_Request_Processor {
+  public function process(Yubivs_Request $request) {
+    if (isset($request->nonce)) {
+      $request->response['nonce'] = $request->nonce;
+    }
+    return Yubivs_Request::STATUS_OK;
+  }
+}
+
+
+class Yubivs_Request_Processor_AddOtp extends Yubivs_Request_Processor {
+  public function process(Yubivs_Request $request) {
+    if (isset($request->otp)) {
+      $request->response['otp'] = $request->otp;
+    }
     return Yubivs_Request::STATUS_OK;
   }
 }
