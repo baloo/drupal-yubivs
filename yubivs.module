@@ -178,26 +178,11 @@ function yubivs_yubikey_node_load($nid) {
 
   if (!($node instanceof stdClass)) return FALSE;
   if (!isset($node->type)) return FALSE;
-  if ($node->type !== 'yubivs_yubikey') return FALSE;
+  if ($node->type === 'yubivs_yubikey') return $node;
+  if ($node->type === 'yubivs_client') return $node;
+  if ($node->type === 'yubivs_ksm') return $node;
 
-  return $node;
-}
-
-
-/**
- * Implements hook_load().
- * This function is used as argument loader. It will return node object
- * if nid passed as parameter is a nodetype yubivs_yubukey
- * otherwise false
- */
-function yubivs_client_node_load($nid) {
-  $node = node_load($nid);
-
-  if (!($node instanceof stdClass)) return FALSE;
-  if (!isset($node->type)) return FALSE;
-  if ($node->type !== 'yubivs_client') return FALSE;
-
-  return $node;
+  return FALSE;
 }
 // }}}
 
