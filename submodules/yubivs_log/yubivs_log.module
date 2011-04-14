@@ -1,0 +1,108 @@
+<?php
+// vim: set foldmethod=marker sw=2 ts=2 et:
+/**
+ * @file
+ * Module implementing logging functionnality for yubikey validation server module
+ */
+
+
+
+// {{{ Menu stuff
+/**
+ * Implements hook_menu().
+ */
+function yubivs_log_menu() {
+  $items = array();
+
+  $items['node/%yubivs_yubikey_node/log'] = array(
+    'title' => 'Log',
+    'page callback' => 'yubivs_log_view_page',
+    'page arguments' => array(1, 'yubivs_log_yubikey'),
+    'description' => 'This page displays logging attempts associated to this yubikey',
+    'access callback' => '_yubivs_log_yubikey_access',
+    'access arguments' => array(1),
+    'type' => MENU_LOCAL_TASK,
+  );
+
+  $items['node/%yubivs_client_node/log'] = array(
+    'title' => 'Log',
+    'page callback' => 'yubivs_log_view_page',
+    'page arguments' => array(1, 'yubivs_log_client'),
+    'description' => 'This page displays logging attempts associated emitted by this client',
+    'access callback' => '_yubivs_log_client_access',
+    'access arguments' => array(1),
+    'type' => MENU_LOCAL_TASK,
+  );
+
+  return $items;
+}
+// }}}
+
+
+// {{{ Page callbacks
+function yubivs_log_view_page($yubikey_node, $view_name) {
+  $view = views_get_view($view_name);
+  if ($view instanceof view) {
+    $view->args = array($yubikey_node->nid);
+    return $view->render();
+  }
+  else {
+    watchdog('yubivs_log', 'Unable to find view %viewname', array('%viewname' => $view_name));
+    drupal_not_found();
+    return FALSE;
+  }
+}
+// }}}
+
+
+// {{{ Yubikey validation server hooks
+/**
+ * Adds logging preprocessor to the response processing chain
+ */
+function yubivs_log_yubivs_response_preprocessors() {
+  return array(
+    'Yubivs_Log_Request_Processor_LogRequest',
+    );
+}
+// }}}
+
+
+// {{{ Permissions parameters
+/**
+ * Implements hook_permission().
+ */
+function yubivs_log_permission() {
+  return array(
+    'access yubikey log' => array(
+      'title' => t('Access yubikey log'),
+      'description' => t('Logs yubikey login attemps'),
+      ),
+    'access yubikey validation client log' => array(
+      'title' => t('Access yubikey validation client log'),
+      'description' => t('Logs clients validation attemps'),
+      ),
+    );
+}
+
+
+// {{{ Access callbacks
+/**
+ * Access callback asserting yubikey log page
+ */
+function _yubivs_log_yubikey_access($node) {
+  return user_access('access yubikey log') && node_access('view', $node);
+}
+
+
+/**
+ * Access callback asserting yubikey log page
+ */
+function _yubivs_log_client_access($node) {
+  return user_access('access validation client log') && node_access('view', $node);
+}
+// }}}
+
+
+// }}}
+
+

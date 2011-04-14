@@ -1,0 +1,152 @@
+<?php
+// vim: set foldmethod=marker sw=2 ts=2 et:
+/**
+ * @file
+ * This file installs node types, fields and instances for
+ * yubikey validation server logging
+ */
+
+
+// {{{ Describe fields and instances
+/**
+ * Returns fields installed by this module
+ */
+function _yubivs_log_installed_fields() {
+  $fields = array();
+
+  $fields['yubivs_log_yubikey'] = array(
+      'field_name' => 'yubivs_log_yubikey',
+      'cardinality' => 1,
+      'type'        => 'node_reference',
+      'settings'    => array(
+        'referenceable_types' => array('yubivs_yubikey'),
+        ),
+      );
+ 
+  $fields['yubivs_log_client'] = array(
+      'field_name' => 'yubivs_log_client',
+      'cardinality' => 1,
+      'type'        => 'node_reference',
+      'settings'    => array(
+        'referenceable_types' => array('yubivs_client'),
+        ),
+      );
+  return $fields;
+}
+
+
+/**
+ * Returns fields instances installed by this module
+ */
+function _yubivs_log_installed_instances() {
+  $t = get_t();
+
+  $instances = array();
+  $instances['yubivs_log_yubikey'] = array(
+      'field_name' => 'yubivs_log_yubikey',
+      'bundle' => 'yubivs_log',
+      'entity_type' => 'node',
+      'label'       => $t('The yubikey authenticated'),
+      'widget'      => array(
+        'type'    => 'options_select',
+        ),
+      'display' => array(
+        'node_reference_node' => array(),
+        ),
+      );
+   $instances['yubivs_log_client'] = array(
+      'field_name' => 'yubivs_log_client',
+      'bundle' => 'yubivs_log',
+      'entity_type' => 'node',
+      'label'       => $t('The client requesting authentication'),
+      'widget'      => array(
+        'type'    => 'options_select',
+        ),
+      'display' => array(
+        'node_reference_node' => array(),
+        ),
+      );
+  return $instances;
+}
+// }}}
+
+
+// {{{ Un/Installation stuff
+/**
+ * Implements hook_uninstall().
+ */
+function yubivs_log_install() {
+  // use get_t() to get the name of our localization function for translation
+  // during install, when t() is not available.
+  $t = get_t();
+
+  // Create this module node types
+  $node_types = yubivs_log_node_info();
+  foreach ($node_types as $node_type) {
+    $content_type = node_type_set_defaults($node_type);
+    $content_type->module = 'yubivs_log';
+    node_type_save($content_type);
+  }
+
+  // Create this module fields
+  foreach (_yubivs_log_installed_fields() as $field) {
+    field_create_field($field);
+  }
+
+  // Create this module field instances
+  foreach (_yubivs_log_installed_instances() as $instance) {
+    field_create_instance($instance);
+  }
+}
+
+
+/**
+ * Implements hook_uninstall().
+ */
+function yubivs_log_uninstall() {
+  $node_types = array_keys(yubivs_log_node_info());
+
+  // Gather all the example content that might have been created while this
+  // module was enabled.  Simple selects still use db_query().
+  // http://api.drupal.org/api/function/db_query/7
+  $nids = db_select('node', 'n')
+            ->fields('n', array('nid'))
+            ->condition('type', $node_types, 'IN')
+            ->execute()
+            ->fetchAll();
+  $delete_nids = array();
+  foreach ($nids as $nid) {
+    $delete_nids[] = $nid->nid;
+  }
+  node_delete_multiple($delete_nids);
+
+
+  // Loop over each of the fields defined by this module and delete
+  // all instances of the field, their data, and the field itself.
+  // http://api.drupal.org/api/function/field_delete_field/7
+  foreach (array_keys(_yubivs_log_installed_fields()) as $field) {
+    field_delete_field($field);
+  }
+
+
+  // Loop over any remaining field instances attached to the node_example
+  // content type (such as the body field) and delete them individually.
+  // http://api.drupal.org/api/function/field_delete_field/7
+  $instances = field_info_instances('node', 'yubivs_log');
+  foreach ($instances as $instance_name => $instance) {
+    field_delete_instance($instance);
+  }
+
+  // Delete our content type
+  // http://api.drupal.org/api/function/node_type_delete/7
+  foreach ($node_types as $node_type) {
+    node_type_delete($node_type);
+  }
+
+  // Purge all field information
+  // http://api.drupal.org/api/function/field_purge_batch/7
+  field_purge_batch(1000);
+}
+// }}}
+
+

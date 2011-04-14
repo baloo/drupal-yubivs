@@ -1,0 +1,8 @@
+name = Yubikey validation server logging module
+description = "This module provides a logging functionnality for validation server"
+core = 7.x
+package = Yubivs
+dependencies[]=yubivs
+dependencies[]=node_reference
+dependencies[]=views
+files[]=yubivs_log.processors.inc
