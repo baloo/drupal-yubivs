@@ -193,7 +193,7 @@ function _yubivs_populate_response_processors($request) {
   $pre_processors = module_invoke_all('yubivs_response_preprocessors');
   $post_processors = module_invoke_all('yubivs_response_postprocessors');
 
-  $processors = $pre_processors + $default_processors + $post_processors;
+  $processors = array_merge($pre_processors, $default_processors, $post_processors);
   module_invoke_all('yubivs_response_processors_alter', $processors);
 
   foreach ($processors as $processor) {
@@ -225,7 +225,7 @@ function _yubivs_populate_request_processors($request) {
   $pre_processors = module_invoke_all('yubivs_request_preprocessors');
   $post_processors = module_invoke_all('yubivs_request_postprocessors');
 
-  $processors = $pre_processors + $default_processors + $post_processors;
+  $processors = array_merge($pre_processors, $default_processors, $post_processors);
   module_invoke_all('yubivs_request_processors_alter', $processors);
 
   foreach ($processors as $processor) {
