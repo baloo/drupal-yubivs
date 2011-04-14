@@ -109,6 +109,7 @@ class Yubivs_Request_Processor_ClientIdLookup extends Yubivs_Request_Processor {
             isset($client->yubivs_client_shared_key[$client->language])) {
           $shared_key = reset($client->yubivs_client_shared_key[$client->language]);
           $request->signature['shared_key'] = $shared_key['value'];
+          $request->client = $client;
           return Yubivs_Request::STATUS_OK;
         }
       }

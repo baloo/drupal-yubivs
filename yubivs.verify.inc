@@ -41,6 +41,8 @@ class Yubivs_Request {
   public $decrypted_data;
   // This request signature
   public $signature;
+   // This request client
+  public $client;
   // The yubikey envolved
   public $yubikey;
   // This response
