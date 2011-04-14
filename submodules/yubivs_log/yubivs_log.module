@@ -17,19 +17,9 @@ function yubivs_log_menu() {
   $items['node/%yubivs_yubikey_node/log'] = array(
     'title' => 'Log',
     'page callback' => 'yubivs_log_view_page',
-    'page arguments' => array(1, 'yubivs_log_yubikey'),
+    'page arguments' => array(1),
     'description' => 'This page displays logging attempts associated to this yubikey',
-    'access callback' => '_yubivs_log_yubikey_access',
-    'access arguments' => array(1),
-    'type' => MENU_LOCAL_TASK,
-  );
-
-  $items['node/%yubivs_client_node/log'] = array(
-    'title' => 'Log',
-    'page callback' => 'yubivs_log_view_page',
-    'page arguments' => array(1, 'yubivs_log_client'),
-    'description' => 'This page displays logging attempts associated emitted by this client',
-    'access callback' => '_yubivs_log_client_access',
+    'access callback' => '_yubivs_log_node_access',
     'access arguments' => array(1),
     'type' => MENU_LOCAL_TASK,
   );
@@ -40,17 +30,49 @@ function yubivs_log_menu() {
 
 
 // {{{ Page callbacks
-function yubivs_log_view_page($yubikey_node, $view_name) {
-  $view = views_get_view($view_name);
-  if ($view instanceof view) {
+function yubivs_log_view_page($yubikey_node) {
+  $display_id = $yubikey_node->type;
+
+  $output = '';
+  // Load the view
+  if ($view = views_get_view('yubivs_log')) {
     $view->args = array($yubikey_node->nid);
-    return $view->render();
+    if ($view->access($display_id)) {
+      $output = $view->execute_display($display_id);
+      // Before returning the block output, convert it to a renderable array
+      // with contextual links.
+      views_add_block_contextual_links($output, $view, $display_id);
+      $view->destroy();
+    }
+    $view->destroy();
+  }
+
+  if (!empty($output)) {
+    return $output;
   }
   else {
-    watchdog('yubivs_log', 'Unable to find view %viewname', array('%viewname' => $view_name));
+    watchdog('yubivs_log', 'Unable to find view %viewname', array('%viewname' => $display_id));
     drupal_not_found();
     return FALSE;
   }
+}
+// }}}
+
+
+// {{{ Node definition stuff
+/**
+ * Implements hook_node_info().
+ */
+function yubivs_log_node_info() {
+  $t = get_t();
+  return array(
+    'yubivs_log' => array(
+      'name' => $t('Yubikey validation log'),
+      'base' => 'yubivs_log',
+      'description' => $t('A yubikey validation log stores informations about yubikey authentication request'),
+      'has_title' => FALSE,
+      ),
+    );
 }
 // }}}
 
@@ -85,24 +107,27 @@ function yubivs_log_permission() {
 }
 
 
-// {{{ Access callbacks
 /**
  * Access callback asserting yubikey log page
  */
-function _yubivs_log_yubikey_access($node) {
-  return user_access('access yubikey log') && node_access('view', $node);
-}
-
-
-/**
- * Access callback asserting yubikey log page
- */
-function _yubivs_log_client_access($node) {
-  return user_access('access validation client log') && node_access('view', $node);
+function _yubivs_log_node_access($node) {
+  if ($node->type === 'yubivs_yubikey' && user_access('access yubikey log') && node_access('view', $node)) return TRUE;
+  if ($node->type === 'yubivs_client' && user_access('access yubikey validation client log') && node_access('view', $node)) return TRUE;
+  return FALSE;
 }
 // }}}
 
 
+// {{{ Views API
+/**
+ * Implements hook_views_api().
+ */
+function yubivs_log_views_api() {
+  return array(
+    'api' => '3.0',
+    'path' => drupal_get_path('module', 'yubivs_log') . '/includes/views',
+  );
+}
 // }}}
 
 

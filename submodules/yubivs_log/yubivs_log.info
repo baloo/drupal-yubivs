@@ -6,3 +6,4 @@ dependencies[]=yubivs
 dependencies[]=node_reference
 dependencies[]=views
 files[]=yubivs_log.processors.inc
+files[]=includes/views/yubivs_log.views_default.inc
